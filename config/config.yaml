@@ -1,4 +1,4 @@
-app_type: web
+app_type: console
 
 addr:
   host: localhost

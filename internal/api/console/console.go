@@ -15,6 +15,7 @@ type workersPool interface {
 	Add(n int)
 	Alive() []int
 	Work(jobs []string)
+	GetJobs() []string
 }
 
 type ConsoleWorkersAPI struct {
@@ -32,6 +33,7 @@ const (
 	cmdDelete = "delete"
 	cmdAlive  = "alive"
 	cmdWork   = "work"
+	cmdJobs   = "jobs"
 )
 
 func (w *ConsoleWorkersAPI) Register(reader io.Reader, closeCtx chan<- os.Signal) {
@@ -51,6 +53,8 @@ func (w *ConsoleWorkersAPI) Register(reader io.Reader, closeCtx chan<- os.Signal
 				w.alive()
 			case cmdWork:
 				w.work(tokens)
+			case cmdJobs:
+				w.jobs()
 			}
 		}
 
@@ -100,4 +104,8 @@ func (w *ConsoleWorkersAPI) work(tokens []string) {
 		return
 	}
 	w.workers.Work(tokens[1:])
+}
+
+func (w *ConsoleWorkersAPI) jobs() {
+	slog.Info(fmt.Sprint(w.workers.GetJobs()))
 }

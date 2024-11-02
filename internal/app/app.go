@@ -33,11 +33,17 @@ type App struct {
 }
 
 func NewApp(ctx context.Context, cfg *config.Config, closeCtx chan<- os.Signal) *App {
-	output := make(chan models.OutMsg[string], 1)
+	output := make(chan models.OutMsg[string, string], 1)
 
 	createWorker := worker.NewSleepWorker(cfg.Workers.Sleeper.Sleep).SleepWorkerFunc
 
-	workerSrv := workerpool.NewWorkerPoolSrv[string](ctx, output, createWorker)
+	params := workerpool.WorkerPoolParams[string, string]{
+		Ctx:                ctx,
+		CreateWorker:       createWorker,
+		Output: output,
+	}
+
+	workerSrv := workerpool.NewWorkerPoolSrv[string, string](params)
 
 	app := &App{
 		sender: msgsender.NewSender(output),

@@ -11,7 +11,7 @@ type Config struct {
 }
 
 type WorkersConfig struct {
-	Sleeper SleepWorkerConfig `yaml:"sleeper"`
+	Sleeper            SleepWorkerConfig `yaml:"sleeper"`
 }
 
 type SleepWorkerConfig struct {

@@ -7,23 +7,23 @@ import (
 	"github.com/qreator/worker-pool/internal/models"
 )
 
-type Sender[T any] struct {
-	output <-chan models.OutMsg[T]
+type Sender[In, Out any] struct {
+	output <-chan models.OutMsg[In, Out]
 }
 
-func NewSender[T any](out <-chan models.OutMsg[T]) *Sender[T] {
-	return &Sender[T]{
+func NewSender[In, Out any](out <-chan models.OutMsg[In, Out]) *Sender[In, Out] {
+	return &Sender[In, Out]{
 		output: out,
 	}
 }
 
-func (s *Sender[T]) Run() {
+func (s *Sender[In, Out]) Run() {
 	for msg := range s.output {
 		if msg.Err != nil {
 			slog.Error(msg.Err.Error(), slog.Int("worker", msg.Id))
 			continue
 		}
 
-		slog.Info(fmt.Sprintf("worker=%d", msg.Id), slog.String("data", msg.Data), slog.Any("result", msg.Result))
+		slog.Info(fmt.Sprintf("worker=%d", msg.Id), slog.Any("data", msg.Data), slog.Any("result", msg.Result))
 	}
 }

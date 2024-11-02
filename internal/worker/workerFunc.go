@@ -1,3 +1,3 @@
 package worker
 
-type WorkerFunc[Out any] func(string) Out
+type WorkerFunc[In, Out any] func(In) Out

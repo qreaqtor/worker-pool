@@ -5,12 +5,13 @@ import (
 	"sync"
 
 	"github.com/qreator/worker-pool/internal/models"
+	"github.com/qreator/worker-pool/internal/queue"
 	"github.com/qreator/worker-pool/internal/worker"
 )
 
-type WorkerPool[Out any] struct {
-	input  chan string
-	output chan<- models.OutMsg[Out]
+type WorkerPool[In, Out any] struct {
+	input  chan In
+	output chan<- models.OutMsg[In, Out]
 
 	next int
 
@@ -21,31 +22,43 @@ type WorkerPool[Out any] struct {
 	workerIDs map[int]context.CancelFunc
 
 	pool *sync.Pool
+
+	queue *queue.Queue[In]
 }
 
-func NewWorkerPoolSrv[Out any](ctx context.Context, output chan<- models.OutMsg[Out], createWorker func() any) *WorkerPool[Out] {
+type WorkerPoolParams[In, Out any] struct {
+	Ctx          context.Context
+	CreateWorker func() any
+	Output chan<- models.OutMsg[In, Out]
+}
+
+func NewWorkerPoolSrv[In, Out any](params WorkerPoolParams[In, Out]) *WorkerPool[In, Out] {
+	input := make(chan In)
+
 	pool := &sync.Pool{
-		New: createWorker,
+		New: params.CreateWorker,
 	}
 
-	return &WorkerPool[Out]{
-		input:     make(chan string, 1),
-		output:    output,
-		next:      1,
-		mu:        &sync.RWMutex{},
-		ctx:       ctx,
-		workerIDs: make(map[int]context.CancelFunc),
-		pool:      pool,
+	queue := queue.NewQueue(input)
+
+	return &WorkerPool[In, Out]{
+		mu:              &sync.RWMutex{},
+		workerIDs:       make(map[int]context.CancelFunc),
+		ctx:             params.Ctx,
+		input:           input,
+		pool:            pool,
+		queue:           queue,
+		output:          params.Output,
 	}
 }
 
-func (w *WorkerPool[Out]) Delete(ids []int) {
+func (w *WorkerPool[In, Out]) Delete(ids []int) {
 	for _, id := range ids {
 		w.deleteOne(id)
 	}
 }
 
-func (w *WorkerPool[Out]) deleteOne(id int) {
+func (w *WorkerPool[In, Out]) deleteOne(id int) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -55,23 +68,23 @@ func (w *WorkerPool[Out]) deleteOne(id int) {
 	}
 }
 
-func (w *WorkerPool[Out]) Add(n int) {
+func (w *WorkerPool[In, Out]) Add(n int) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	for range n {
 		ctx, cancel := context.WithCancel(w.ctx)
 
+		w.next++
+
 		go w.startWorker(ctx, w.next)
 
 		w.workerIDs[w.next] = cancel
-
-		w.next++
 	}
 }
 
 // Return slice with id alive's workers.
-func (w *WorkerPool[Out]) Alive() []int {
+func (w *WorkerPool[In, Out]) Alive() []int {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 
@@ -84,7 +97,7 @@ func (w *WorkerPool[Out]) Alive() []int {
 	return workers
 }
 
-func (w *WorkerPool[Out]) startWorker(ctx context.Context, id int) {
+func (w *WorkerPool[In, Out]) startWorker(ctx context.Context, id int) {
 	defer w.deleteOne(id)
 
 	for {
@@ -96,31 +109,28 @@ func (w *WorkerPool[Out]) startWorker(ctx context.Context, id int) {
 				return
 			}
 
-			outMsg := models.OutMsg[Out]{
+			outMsg := models.OutMsg[In, Out]{
 				Id:   id,
 				Data: msg,
 			}
 
-			worker, ok := w.pool.Get().(worker.WorkerFunc[Out])
+			worker, ok := w.pool.Get().(worker.WorkerFunc[In, Out])
 			if !ok {
 				outMsg.Err = errBadWorkerFuncType
 			} else {
 				outMsg.Result = worker(msg)
+				w.pool.Put(worker)
 			}
 
 			w.output <- outMsg
-
-			if outMsg.Err == nil {
-				w.pool.Put(worker)
-			}
 		}
 	}
 }
 
-func (w *WorkerPool[Out]) Work(jobs []string) {
-	for _, job := range jobs {
-		go func(msg string) {
-			w.input <- msg
-		}(job)
-	}
+func (w *WorkerPool[In, Out]) Work(jobs []In) {
+	w.queue.Append(jobs)
+}
+
+func (w *WorkerPool[In, Out]) GetJobs() []In {
+	return w.queue.GetJobs()
 }

@@ -15,7 +15,7 @@ func NewSleepWorker(d time.Duration) *SleepWorker {
 }
 
 func (sw *SleepWorker) SleepWorkerFunc() any {
-	return WorkerFunc[string](func(msg string) string {
+	return WorkerFunc[string, string](func(msg string) string {
 
 		time.Sleep(sw.dur)
 		return msg
