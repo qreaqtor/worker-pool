@@ -24,6 +24,6 @@ func (s *Sender[In, Out]) Run() {
 			continue
 		}
 
-		slog.Info(fmt.Sprintf("worker=%d", msg.Id), slog.Any("data", msg.Data), slog.Any("result", msg.Result))
+		slog.Info(fmt.Sprintf("worker=%d", msg.Id), slog.Any("data", msg.IncomigData), slog.Any("result", msg.Result))
 	}
 }

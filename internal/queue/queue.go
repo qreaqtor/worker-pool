@@ -26,6 +26,7 @@ func (q *Queue[T]) Append(newItems []T) {
 	q.mu.Unlock()
 
 	go func() {
+		// если есть активные writers, то просто выхожу из функции
 		select {
 		case q.writers <- struct{}{}:
 			for {
@@ -36,14 +37,14 @@ func (q *Queue[T]) Append(newItems []T) {
 					break
 				}
 
-				item := q.items[0]
+				item := q.items[0] // беру следующий элемент, который нужно отправить
 
 				q.mu.Unlock()
 
 				q.input <- item
 
 				q.mu.Lock()
-				q.items = q.items[1:]
+				q.items = q.items[1:] // выполняю смещение только здесь, чтобы в GetJobs(), помимо всех предстоящих был и следующий элемент, который будет отправлен
 				q.mu.Unlock()
 			}
 			<-q.writers

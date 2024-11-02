@@ -15,6 +15,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// уведомляю канал, а не контекст, чтобы отменять контекст в том же месте где и создал
 	closeCtx := make(chan os.Signal, 1)
 	signal.Notify(closeCtx, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 

@@ -23,13 +23,14 @@ type WorkerPool[In, Out any] struct {
 
 	pool *sync.Pool
 
-	queue *queue.Queue[In]
+	queue *queue.Queue[In] // использую для того, чтобы jobs обрабатывались в том порядке, в каком пришли
 }
 
+// использую отдельную структуру для передачи аргументов
 type WorkerPoolParams[In, Out any] struct {
 	Ctx          context.Context
 	CreateWorker func() any
-	Output chan<- models.OutMsg[In, Out]
+	Output       chan<- models.OutMsg[In, Out]
 }
 
 func NewWorkerPoolSrv[In, Out any](params WorkerPoolParams[In, Out]) *WorkerPool[In, Out] {
@@ -42,13 +43,13 @@ func NewWorkerPoolSrv[In, Out any](params WorkerPoolParams[In, Out]) *WorkerPool
 	queue := queue.NewQueue(input)
 
 	return &WorkerPool[In, Out]{
-		mu:              &sync.RWMutex{},
-		workerIDs:       make(map[int]context.CancelFunc),
-		ctx:             params.Ctx,
-		input:           input,
-		pool:            pool,
-		queue:           queue,
-		output:          params.Output,
+		mu:        &sync.RWMutex{},
+		workerIDs: make(map[int]context.CancelFunc),
+		ctx:       params.Ctx,
+		input:     input,
+		pool:      pool,
+		queue:     queue,
+		output:    params.Output,
 	}
 }
 
@@ -98,7 +99,7 @@ func (w *WorkerPool[In, Out]) Alive() []int {
 }
 
 func (w *WorkerPool[In, Out]) startWorker(ctx context.Context, id int) {
-	defer w.deleteOne(id)
+	defer w.deleteOne(id) // удаляю воркера при выходе
 
 	for {
 		select {
@@ -106,15 +107,15 @@ func (w *WorkerPool[In, Out]) startWorker(ctx context.Context, id int) {
 			return
 		case msg, ok := <-w.input:
 			if !ok {
-				return
+				return // если канал закрылся и читать нечего значит конец
 			}
 
 			outMsg := models.OutMsg[In, Out]{
-				Id:   id,
-				Data: msg,
+				Id:          id,
+				IncomigData: msg,
 			}
 
-			worker, ok := w.pool.Get().(worker.WorkerFunc[In, Out])
+			worker, ok := w.pool.Get().(worker.WorkerFunc[In, Out]) // если воркер имеет другой дженерик тип, то сообщаю об этом и не кладу обратно в pool
 			if !ok {
 				outMsg.Err = errBadWorkerFuncType
 			} else {

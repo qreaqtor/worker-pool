@@ -58,7 +58,7 @@ func (w *ConsoleWorkersAPI) Register(reader io.Reader, closeCtx chan<- os.Signal
 			}
 		}
 
-		closeCtx <- nil
+		closeCtx <- nil // пишу в канал, который создал в main для отмены контекста если получил EOF
 	}()
 }
 
