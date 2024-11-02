@@ -1,0 +1,9 @@
+app_type: web
+
+addr:
+  host: localhost
+  port: 50055
+
+workers:
+  sleeper:
+    sleep: 2s
