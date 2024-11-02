@@ -36,12 +36,15 @@ func (q *Queue[T]) Append(newItems []T) {
 					break
 				}
 
-				// item := q.items[0]
-				// q.items = q.items[1:]
+				item := q.items[0]
 
-				// q.mu.Unlock()
+				q.mu.Unlock()
 
-				// q.input <- item
+				q.input <- item
+
+				q.mu.Lock()
+				q.items = q.items[1:]
+				q.mu.Unlock()
 			}
 			<-q.writers
 		default:
