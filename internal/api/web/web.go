@@ -38,7 +38,7 @@ func (wp *WebWorkersAPI) Register(router *mux.Router) {
 func (wp *WebWorkersAPI) delete(w http.ResponseWriter, r *http.Request) {
 	msg := web.NewLogMsg(r.URL.Path, r.Method)
 
-	body, err := web.ReadRequestBody(r)
+	body, err := web.ReadRequestBody(r, web.ContentTypeTextPlain)
 	if err != nil {
 		msg.Set(err.Error(), http.StatusUnsupportedMediaType)
 		web.WriteError(w, msg)
@@ -68,7 +68,7 @@ func (wp *WebWorkersAPI) delete(w http.ResponseWriter, r *http.Request) {
 func (wp *WebWorkersAPI) add(w http.ResponseWriter, r *http.Request) {
 	msg := web.NewLogMsg(r.URL.Path, r.Method)
 
-	body, err := web.ReadRequestBody(r)
+	body, err := web.ReadRequestBody(r, web.ContentTypeTextPlain)
 	if err != nil {
 		msg.Set(err.Error(), http.StatusUnsupportedMediaType)
 		web.WriteError(w, msg)
@@ -102,7 +102,7 @@ func (wp *WebWorkersAPI) alive(w http.ResponseWriter, r *http.Request) {
 func (wp *WebWorkersAPI) work(w http.ResponseWriter, r *http.Request) {
 	msg := web.NewLogMsg(r.URL.Path, http.MethodPost)
 
-	body, err := web.ReadRequestBody(r)
+	body, err := web.ReadRequestBody(r, web.ContentTypeTextPlain)
 	if err != nil {
 		msg.Set(err.Error(), http.StatusUnsupportedMediaType)
 		web.WriteError(w, msg)
