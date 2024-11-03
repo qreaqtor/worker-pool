@@ -136,7 +136,3 @@ func (w *WorkerPool[In, Out]) startWorker(ctx context.Context, id int) {
 func (w *WorkerPool[In, Out]) Work(jobs []In) {
 	w.queue.Append(jobs)
 }
-
-func (w *WorkerPool[In, Out]) GetJobs() []In {
-	return w.queue.GetJobs()
-}

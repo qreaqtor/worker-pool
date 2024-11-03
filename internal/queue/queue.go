@@ -48,14 +48,12 @@ func (q *Queue[T]) Append(newItems []T) {
 				}
 
 				item := q.items[0] // беру следующий элемент, который нужно отправить
+				q.items = q.items[1:]
 
 				q.mu.Unlock()
 
 				select {
 				case q.input <- item:
-					q.mu.Lock()
-					q.items = q.items[1:] // выполняю смещение только здесь, чтобы в GetJobs(), помимо всех предстоящих был и следующий элемент, который будет отправлен
-					q.mu.Unlock()
 				case <-q.ctx.Done(): // если контекст закрыт, то выхожу без записи в канал
 					return
 				}
@@ -64,11 +62,4 @@ func (q *Queue[T]) Append(newItems []T) {
 			return
 		}
 	}()
-}
-
-func (q *Queue[T]) GetJobs() []T {
-	q.mu.RLock()
-	defer q.mu.RUnlock()
-
-	return q.items
 }

@@ -14,7 +14,6 @@ type workersPool interface {
 	Add(n int)
 	Alive() []int
 	Work(jobs []string)
-	GetJobs() []string
 }
 
 type WebWorkersAPI struct {
@@ -31,7 +30,6 @@ func NewWebWorkersAPI(workers workersPool) *WebWorkersAPI {
 func (wp *WebWorkersAPI) Register(router *mux.Router) {
 	router.HandleFunc("/delete", wp.delete).Methods(http.MethodDelete)
 	router.HandleFunc("/alive", wp.alive).Methods(http.MethodGet)
-	router.HandleFunc("/jobs", wp.getJobs).Methods(http.MethodGet)
 	router.HandleFunc("/add", wp.add).Methods(http.MethodPost)
 	router.HandleFunc("/work", wp.work).Methods(http.MethodPost)
 }
@@ -98,16 +96,6 @@ func (wp *WebWorkersAPI) alive(w http.ResponseWriter, r *http.Request) {
 
 	msg.Set("success", http.StatusOK)
 	web.WriteData(w, msg, map[string]interface{}{"ids": data})
-}
-
-
-func (wp *WebWorkersAPI) getJobs(w http.ResponseWriter, r *http.Request) {
-	msg := web.NewLogMsg(r.URL.Path, r.Method)
-
-	data := wp.workers.GetJobs()
-
-	msg.Set("success", http.StatusOK)
-	web.WriteData(w, msg, map[string]interface{}{"jobs": data})
 }
 
 
