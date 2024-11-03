@@ -47,7 +47,7 @@ func (wp *WebWorkersAPI) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idsStr := strings.Split(string(body), ",")
+	idsStr := strings.Split(string(body), " ")
 	ids := make([]int, len(idsStr))
 
 	for _, idStr := range idsStr {
@@ -107,7 +107,7 @@ func (wp *WebWorkersAPI) getJobs(w http.ResponseWriter, r *http.Request) {
 	data := wp.workers.GetJobs()
 
 	msg.Set("success", http.StatusOK)
-	web.WriteData(w, msg, map[string]interface{}{"ids": data})
+	web.WriteData(w, msg, map[string]interface{}{"jobs": data})
 }
 
 
@@ -121,7 +121,7 @@ func (wp *WebWorkersAPI) work(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobs := strings.Split(string(body), ",")
+	jobs := strings.Split(string(body), " ")
 
 	wp.workers.Work(jobs)
 

@@ -40,7 +40,12 @@ func NewWorkerPoolSrv[In, Out any](params WorkerPoolParams[In, Out]) *WorkerPool
 		New: params.CreateWorker,
 	}
 
-	queue := queue.NewQueue(input)
+	queue := queue.NewQueue(params.Ctx, input)
+
+	go func() {
+		<-params.Ctx.Done() // если контекст отменен, то закрываю канал
+		close(input)
+	}()
 
 	return &WorkerPool[In, Out]{
 		mu:        &sync.RWMutex{},
