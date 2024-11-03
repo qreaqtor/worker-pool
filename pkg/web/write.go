@@ -28,7 +28,7 @@ func WriteData(w http.ResponseWriter, msg *logMsg, data any) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", ContentTypeJSON)
 	_, err = w.Write(response)
 	if err != nil {
 		msg.Message = err.Error()
